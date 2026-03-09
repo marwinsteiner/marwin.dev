@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { executeCommand, BANNER, COMMAND_NAMES, OutputLine } from "@/commands";
 import { renderStats } from "@/commands/stats";
 import { repos } from "@/data/repos";
+
+const VolSurface = lazy(() => import("./VolSurface"));
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 
@@ -67,6 +69,7 @@ export default function Terminal() {
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [booting, setBooting] = useState(true);
   const [bootLines, setBootLines] = useState<string[]>([]);
+  const [showVolSurface, setShowVolSurface] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -319,6 +322,22 @@ export default function Terminal() {
         return;
       }
 
+      if (special === "volsurf") {
+        setHistory((prev) => [
+          ...prev,
+          {
+            command: input,
+            output: [
+              { text: "" },
+              { text: "  Loading implied volatility surface...", className: "text-dim" },
+              { text: "" },
+            ],
+          },
+        ]);
+        setShowVolSurface(true);
+        return;
+      }
+
       if (special === "banner") {
         setHistory((prev) => [...prev, { command: input, output: result }]);
         setShowBanner(false);
@@ -493,6 +512,24 @@ export default function Terminal() {
           )}
         </div>
       </div>
+
+      {/* Vol Surface overlay */}
+      {showVolSurface && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ background: "#050510" }}>
+              <span style={{ color: "#ff8800", fontFamily: "system-ui, sans-serif", fontSize: 14 }}>
+                Loading volatility surface...
+              </span>
+            </div>
+          }
+        >
+          <VolSurface onClose={() => {
+            setShowVolSurface(false);
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }} />
+        </Suspense>
+      )}
     </div>
   );
 }

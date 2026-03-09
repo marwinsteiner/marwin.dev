@@ -18,20 +18,6 @@ function blank(): OutputLine {
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-function heatChar(n: number): string {
-  if (n < 0) return " ";
-  if (n === 0) return "·";
-  if (n <= 2) return "░";
-  if (n <= 5) return "▒";
-  if (n <= 9) return "▓";
-  return "█";
-}
-
 function barChar(filled: number, total: number): string {
   return "█".repeat(filled) + "░".repeat(total - filled);
 }
@@ -66,43 +52,6 @@ function renderSummary(stats: GithubStats): OutputLine[] {
     amber(`  └${"─".repeat(W + 2)}┘`),
     blank(),
   ];
-}
-
-function renderHeatmap(stats: GithubStats): OutputLine[] {
-  const lines: OutputLine[] = [];
-  lines.push(bold("  ── ACTIVITY HEATMAP (last 13 weeks) ──"));
-  lines.push(blank());
-
-  // Month labels row
-  let monthRow = "       ";
-  for (let w = 0; w < stats.heatmapWeekStartDates.length; w++) {
-    const d = new Date(stats.heatmapWeekStartDates[w]);
-    const month = MONTHS[d.getUTCMonth()];
-    // Show month label at the start of each month
-    if (w === 0 || d.getUTCDate() <= 7) {
-      monthRow += month + " ";
-    } else {
-      monthRow += "    ";
-    }
-  }
-  lines.push(dim(monthRow));
-
-  // Heatmap rows (Mon, Wed, Fri for compactness, or all 7)
-  const displayDays = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
-  for (const dow of displayDays) {
-    let row = `  ${DAYS[dow]}  `;
-    for (let w = 0; w < 13; w++) {
-      row += heatChar(stats.heatmap[dow]?.[w] ?? 0) + " ";
-    }
-    lines.push(dow % 2 === 1 ? green(row) : dim(row));
-  }
-
-  lines.push(blank());
-  lines.push(
-    dim("  · = 0  ░ = 1-2  ▒ = 3-5  ▓ = 6-9  █ = 10+"),
-  );
-  lines.push(blank());
-  return lines;
 }
 
 function renderDayOfWeek(stats: GithubStats): OutputLine[] {
@@ -202,7 +151,6 @@ export function renderStats(stats: GithubStats): OutputLine[] {
   return [
     blank(),
     ...renderSummary(stats),
-    ...renderHeatmap(stats),
     ...renderDayOfWeek(stats),
     ...renderHourOfDay(stats),
     ...renderTopRepos(stats),
