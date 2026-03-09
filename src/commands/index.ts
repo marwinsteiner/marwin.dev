@@ -66,6 +66,14 @@ function helpCommand(): CommandResult {
     green("  help            ─  show this message"),
     green("  banner          ─  show welcome banner"),
     blank(),
+    blank(),
+    bold("  EASTER EGGS"),
+    blank(),
+    green("  top             ─  what's running in my head"),
+    green("  fortune         ─  quant wisdom"),
+    green("  cowsay <msg>    ─  moo"),
+    green("  ping            ─  reach me"),
+    blank(),
     dim("  Tab to autocomplete · ↑↓ for history · Ctrl+L to clear"),
     blank(),
   ];
@@ -348,6 +356,10 @@ export const COMMAND_NAMES = [
   "auth",
   "future",
   "links",
+  "top",
+  "fortune",
+  "cowsay",
+  "ping",
   "clear",
   "banner",
 ];
@@ -355,7 +367,7 @@ export const COMMAND_NAMES = [
 export function executeCommand(
   input: string,
   isAuthenticated: boolean,
-): { result: CommandResult; special?: "clear" | "auth" | "banner" | "stats" | "volsurf" } {
+): { result: CommandResult; special?: "clear" | "auth" | "banner" | "stats" | "volsurf" | "ping" } {
   const trimmed = input.trim();
   const parts = trimmed.split(/\s+/);
   const cmd = parts[0]?.toLowerCase() || "";
@@ -407,6 +419,15 @@ export function executeCommand(
       return { result: [], special: "clear" };
     case "banner":
       return { result: BANNER, special: "banner" };
+    case "ping":
+      return { result: [], special: "ping" };
+    case "top":
+    case "htop":
+      return { result: topCommand() };
+    case "fortune":
+      return { result: fortuneCommand() };
+    case "cowsay":
+      return { result: cowsayCommand(args.join(" ")) };
     case "exit":
     case "quit":
       return {
@@ -423,12 +444,6 @@ export function executeCommand(
           error("  nice try."),
         ],
       };
-    case "sudo":
-      return {
-        result: [
-          error("  marwin is not in the sudoers file. This incident will be reported."),
-        ],
-      };
     case "vim":
     case "emacs":
     case "nano":
@@ -437,9 +452,130 @@ export function executeCommand(
           dim(`  ${cmd}: I appreciate the enthusiasm, but this is a read-only terminal.`),
         ],
       };
+    case "pip":
+      if (args.join(" ").includes("install")) {
+        const pkg = args.slice(1).join(" ") || "edge";
+        return {
+          result: [
+            error(`  ERROR: No matching distribution found for ${pkg}`),
+            dim("  (alpha can't be pip installed. believe me, I've tried.)"),
+          ],
+        };
+      }
+      return { result: notFoundCommand(cmd) };
+    case "cd":
+      return {
+        result: [dim("  You're already where you need to be.")],
+      };
+    case "id":
+      return {
+        result: [green("  uid=0(quant) gid=100(builders) groups=100(builders),42(derivatives),7(vol-traders)")],
+      };
     default:
       return { result: notFoundCommand(cmd) };
   }
+}
+
+// --- Easter egg commands ---
+
+const FORTUNES = [
+  "The market can stay irrational longer than you can stay solvent. — John Maynard Keynes",
+  "In theory, there is no difference between theory and practice. In practice, there is. — Yogi Berra",
+  "Risk comes from not knowing what you're doing. — Warren Buffett",
+  "The four most dangerous words in investing: 'This time it's different.' — Sir John Templeton",
+  "There are two kinds of forecasters: those who don't know, and those who don't know they don't know. — J.K. Galbraith",
+  "Beware of geeks bearing formulas. — Warren Buffett",
+  "The only function of economic forecasting is to make astrology look respectable. — J.K. Galbraith",
+  "It's not whether you're right or wrong, but how much money you make when you're right. — George Soros",
+  "An investment in knowledge pays the best interest. — Benjamin Franklin",
+  "Buy when there's blood in the streets, even if the blood is your own. — Baron Rothschild",
+  "The stock market is a device for transferring money from the impatient to the patient. — Warren Buffett",
+  "The best time to buy is when blood is running in the streets. The second best time is now.",
+  "Never confuse a bull market with brains.",
+  "If you torture the data long enough, it will confess to anything. — Ronald Coase",
+  "All models are wrong, but some are useful. — George Box",
+  "Volatility is not risk. Permanent loss of capital is risk.",
+  "The trend is your friend, until the bend at the end.",
+  "Past performance is not indicative of future results, but it's all we've got.",
+  "I can calculate the motions of heavenly bodies, but not the madness of people. — Isaac Newton",
+  "The market is a voting machine in the short run, and a weighing machine in the long run. — Benjamin Graham",
+];
+
+function fortuneCommand(): CommandResult {
+  const fortune = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
+  return [
+    blank(),
+    green(`  ${fortune}`),
+    blank(),
+  ];
+}
+
+function cowsayCommand(message: string): CommandResult {
+  const msg = message || "moo. also, have you looked at the vol surface today?";
+  const maxWidth = 52;
+
+  // Word wrap
+  const words = msg.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    if (line.length + word.length + 1 > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line += (line ? " " : "") + word;
+    }
+  }
+  if (line) lines.push(line);
+
+  const width = Math.min(maxWidth, Math.max(...lines.map((l) => l.length)));
+  const border = "-".repeat(width + 2);
+  const result: CommandResult = [blank()];
+  result.push(green(`   ${border}`));
+  if (lines.length === 1) {
+    result.push(green(`  < ${lines[0].padEnd(width)} >`));
+  } else {
+    lines.forEach((l, i) => {
+      const left = i === 0 ? "/" : i === lines.length - 1 ? "\\" : "|";
+      const right = i === 0 ? "\\" : i === lines.length - 1 ? "/" : "|";
+      result.push(green(`  ${left} ${l.padEnd(width)} ${right}`));
+    });
+  }
+  result.push(green(`   ${border}`));
+  result.push(green("          \\   ^__^"));
+  result.push(green("           \\  (oo)\\_______"));
+  result.push(green("              (__)\\       )\\/\\"));
+  result.push(green("                  ||----w |"));
+  result.push(green("                  ||     ||"));
+  result.push(blank());
+  return result;
+}
+
+function topCommand(): CommandResult {
+  const now = new Date();
+  const uptime = `${Math.floor(Math.random() * 200 + 100)}d ${Math.floor(Math.random() * 24)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}`;
+  return [
+    blank(),
+    amber(`  top - ${now.toTimeString().slice(0, 8)} up ${uptime},  1 user,  load avg: 0.87, 0.42, 0.31`),
+    amber("  Tasks:  12 total,   3 running,   9 sleeping,   0 stopped"),
+    amber("  %Cpu:  73.2 us,   4.1 sy,   0.0 ni,  22.7 id"),
+    amber("  MiB Mem:  16384.0 total,   2048.0 free,  12288.0 used,   2048.0 cache"),
+    blank(),
+    bold("  PID   USER      %CPU  %MEM  TIME+     COMMAND"),
+    green("  1     marwin    42.0  18.2  9999:59   vol-surface-calibrator"),
+    green("  2     marwin    18.7  12.4  7234:11   alpha-seeker"),
+    green("  3     marwin    12.3   8.1  4521:33   systematic-backtester"),
+    dim("  4     marwin     8.4   6.2  3102:07   options-pricer-cpp"),
+    dim("  5     marwin     5.1   4.8  2841:22   pyspark-pipeline"),
+    dim("  6     marwin     3.2   3.1  1923:45   polymarket-watcher"),
+    dim("  7     marwin     2.8   2.4  1644:18   hkjc-data-scraper"),
+    dim("  8     marwin     1.9   1.8   982:30   coffee-daemon"),
+    dim("  9     marwin     0.7   1.2   441:12   git-push-loop"),
+    dim("  10    marwin     0.4   0.8   203:55   linkedin-ignore"),
+    dim("  11    marwin     0.2   0.4    47:33   sleep-scheduler"),
+    dim("  12    marwin     0.0   0.1     0:01   impostor-syndrome"),
+    blank(),
+  ];
 }
 
 export { BANNER };

@@ -322,6 +322,53 @@ export default function Terminal() {
         return;
       }
 
+      if (special === "ping") {
+        const host = "recruiters.linkedin.com";
+        const initialOutput: OutputLine[] = [
+          { text: "" },
+          { text: `  PING ${host} (104.16.100.52): 56 data bytes`, className: "text-green" },
+        ];
+        setHistory((prev) => [
+          ...prev,
+          { command: input, output: initialOutput },
+        ]);
+
+        const pingLines: OutputLine[] = [
+          { text: `  64 bytes from 104.16.100.52: icmp_seq=0 ttl=56 time=14.2 ms`, className: "text-green" },
+          { text: `  64 bytes from 104.16.100.52: icmp_seq=1 ttl=56 time=13.8 ms`, className: "text-green" },
+          { text: `  64 bytes from 104.16.100.52: icmp_seq=2 ttl=56 time=15.1 ms`, className: "text-green" },
+          { text: `  Request timeout for icmp_seq 3`, className: "text-amber" },
+          { text: `  Request timeout for icmp_seq 4`, className: "text-amber" },
+          { text: `  Request timeout for icmp_seq 5`, className: "text-red" },
+          { text: "", className: "text-green" },
+          { text: `  --- ${host} ping statistics ---`, className: "text-green" },
+          { text: `  6 packets transmitted, 3 received, 50% packet loss`, className: "text-amber" },
+          { text: "", className: "text-green" },
+          { text: `  ... I prefer email, actually.`, className: "text-dim" },
+          { text: `  steiner_marwin on Twitter, or find me on GitHub.`, className: "text-dim" },
+          { text: "" },
+        ];
+
+        const delays = [900, 950, 1000, 1800, 2200, 2500, 200, 200, 200, 200, 400, 200, 200];
+        let timeout = 0;
+        pingLines.forEach((line, idx) => {
+          timeout += delays[idx] || 300;
+          setTimeout(() => {
+            setHistory((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              updated[updated.length - 1] = {
+                ...last,
+                output: [...last.output, line],
+              };
+              return updated;
+            });
+          }, timeout);
+        });
+
+        return;
+      }
+
       if (special === "volsurf") {
         setHistory((prev) => [
           ...prev,
