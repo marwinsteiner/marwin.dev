@@ -53,6 +53,7 @@ function helpCommand(): CommandResult {
     blank(),
     green("  whoami          ─  about marwin"),
     green("  neofetch        ─  system info (the fun one)"),
+    green("  stats           ─  github activity charts"),
     green("  repos           ─  list all repositories"),
     green("  repos -c        ─  list repositories by category"),
     green("  cat <repo>      ─  detailed view of a repository"),
@@ -337,6 +338,7 @@ export const COMMAND_NAMES = [
   "help",
   "whoami",
   "neofetch",
+  "stats",
   "repos",
   "cat",
   "cv",
@@ -350,7 +352,7 @@ export const COMMAND_NAMES = [
 export function executeCommand(
   input: string,
   isAuthenticated: boolean,
-): { result: CommandResult; special?: "clear" | "auth" | "banner" } {
+): { result: CommandResult; special?: "clear" | "auth" | "banner" | "stats" } {
   const trimmed = input.trim();
   const parts = trimmed.split(/\s+/);
   const cmd = parts[0]?.toLowerCase() || "";
@@ -382,6 +384,8 @@ export function executeCommand(
         return { result: futureCommand() };
       }
       return { result: catRepoCommand(args[0]) };
+    case "stats":
+      return { result: [], special: "stats" };
     case "cv":
       return { result: cvCommand(isAuthenticated) };
     case "auth":

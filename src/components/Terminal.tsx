@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { executeCommand, BANNER, COMMAND_NAMES, OutputLine } from "@/commands";
+import { renderStats } from "@/commands/stats";
 import { repos } from "@/data/repos";
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -266,6 +267,55 @@ export default function Terminal() {
 
       if (special === "auth") {
         handleAuth();
+        return;
+      }
+
+      if (special === "stats") {
+        const loadingEntry: HistoryEntry = {
+          command: input,
+          output: [
+            { text: "" },
+            { text: "  Fetching GitHub stats...", className: "text-dim" },
+            { text: "" },
+          ],
+        };
+        setHistory((prev) => [...prev, loadingEntry]);
+
+        fetch("/api/github-stats")
+          .then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          })
+          .then((data) => {
+            const output = renderStats(data);
+            setHistory((prev) => {
+              const updated = [...prev];
+              // Replace the last entry (the loading message)
+              updated[updated.length - 1] = { command: input, output };
+              return updated;
+            });
+          })
+          .catch((err) => {
+            setHistory((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                command: input,
+                output: [
+                  { text: "" },
+                  {
+                    text: `  Error fetching stats: ${err.message}`,
+                    className: "text-red",
+                  },
+                  {
+                    text: "  GitHub API may be rate-limited. Try again later.",
+                    className: "text-dim",
+                  },
+                  { text: "" },
+                ],
+              };
+              return updated;
+            });
+          });
         return;
       }
 
