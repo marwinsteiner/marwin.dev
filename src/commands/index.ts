@@ -1,5 +1,5 @@
 import { repos, repoCategories, Repo } from "@/data/repos";
-import { cvPublic, cvExtended, CVSection } from "@/data/cv";
+import { cvExtended, CVSection } from "@/data/cv";
 
 export interface OutputLine {
   text: string;
@@ -213,14 +213,12 @@ function catRepoCommand(name: string): CommandResult {
   return lines.filter((l) => l.text !== "" || l.className === undefined);
 }
 
-function formatCV(sections: CVSection[], full: boolean): CommandResult {
+function formatCV(sections: CVSection[]): CommandResult {
   const lines: CommandResult = [blank()];
-  if (full) {
-    lines.push(amber("  ┌──────────────────────────────────────────┐"));
-    lines.push(amber("  │  FULL CV — BIOMETRIC ACCESS GRANTED      │"));
-    lines.push(amber("  └──────────────────────────────────────────┘"));
-    lines.push(blank());
-  }
+  lines.push(amber("  ┌──────────────────────────────────────────┐"));
+  lines.push(amber("  │  FULL CV — BIOMETRIC ACCESS GRANTED      │"));
+  lines.push(amber("  └──────────────────────────────────────────┘"));
+  lines.push(blank());
   for (const section of sections) {
     lines.push(bold(`  ═══ ${section.title} ═══`));
     lines.push(blank());
@@ -232,7 +230,7 @@ function formatCV(sections: CVSection[], full: boolean): CommandResult {
       for (const bullet of item.bullets) {
         lines.push(green(`    • ${bullet}`));
       }
-      if (full && item.extended) {
+      if (item.extended) {
         for (const ext of item.extended) {
           lines.push(dim(`    ◦ ${ext}`));
         }
@@ -240,18 +238,21 @@ function formatCV(sections: CVSection[], full: boolean): CommandResult {
       lines.push(blank());
     }
   }
-  if (!full) {
-    lines.push(dim('  ─── Abbreviated CV. Run "auth" to unlock the full version. ───'));
-    lines.push(blank());
-  }
   return lines;
 }
 
 function cvCommand(authenticated: boolean): CommandResult {
-  if (authenticated) {
-    return formatCV(cvExtended, true);
+  if (!authenticated) {
+    return [
+      blank(),
+      error("  ACCESS DENIED"),
+      blank(),
+      dim("  CV requires biometric verification."),
+      dim('  Run "auth" to authenticate, then try again.'),
+      blank(),
+    ];
   }
-  return formatCV(cvPublic, false);
+  return formatCV(cvExtended);
 }
 
 function futureCommand(): CommandResult {
