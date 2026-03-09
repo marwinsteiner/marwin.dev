@@ -43,6 +43,19 @@ interface HistoryEntry {
   output: OutputLine[];
 }
 
+const BOOT_SEQUENCE = [
+  "BIOS v2.4.1 — GlassTTY VT220 Emulator",
+  "Memory test... 37 repos OK",
+  "Loading kernel modules...",
+  "  [OK] derivatives.ko",
+  "  [OK] systematic-trading.ko",
+  "  [OK] volatility-surface.ko",
+  "  [OK] prediction-markets.ko",
+  "Mounting /dev/github... done",
+  "Starting marwin.dev v1.0.0...",
+  "",
+];
+
 export default function Terminal() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [currentInput, setCurrentInput] = useState("");
@@ -57,31 +70,28 @@ export default function Terminal() {
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  const BOOT_SEQUENCE = [
-    "BIOS v2.4.1 — GlassTTY VT220 Emulator",
-    "Memory test... 37 repos OK",
-    "Loading kernel modules...",
-    "  [OK] derivatives.ko",
-    "  [OK] systematic-trading.ko",
-    "  [OK] volatility-surface.ko",
-    "  [OK] prediction-markets.ko",
-    "Mounting /dev/github... done",
-    "Starting marwin.dev v1.0.0...",
-    "",
-  ];
-
   useEffect(() => {
+    let cancelled = false;
     let i = 0;
     const interval = setInterval(() => {
+      if (cancelled) return;
       if (i < BOOT_SEQUENCE.length) {
-        setBootLines((prev) => [...prev, BOOT_SEQUENCE[i]]);
+        const line = BOOT_SEQUENCE[i];
+        setBootLines((prev) => [...prev, line]);
         i++;
       } else {
         clearInterval(interval);
-        setTimeout(() => setBooting(false), 300);
+        if (!cancelled) {
+          setTimeout(() => {
+            if (!cancelled) setBooting(false);
+          }, 300);
+        }
       }
     }, 120);
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   const scrollToBottom = useCallback(() => {
@@ -358,7 +368,7 @@ export default function Terminal() {
       {/* Terminal body */}
       <div
         ref={terminalRef}
-        className="flex-1 overflow-y-auto p-4 font-glasstty"
+        className="flex-1 min-h-0 overflow-y-auto p-4 font-glasstty"
       >
         <div className="max-w-4xl mx-auto">
           {/* Banner */}
